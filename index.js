@@ -1,3 +1,64 @@
+// Add at the top of your JavaScript file
+let isPowered = true;
+const calculator = document.querySelector('.calculator');
+const powerButton = document.createElement('button');
+powerButton.className = 'power-button';
+powerButton.innerHTML = '<span class="power-icon"></span>';
+calculator.appendChild(powerButton);
+
+// Add power button event listener
+powerButton.addEventListener('click', () => {
+    isPowered = !isPowered;
+    
+    if (!isPowered) {
+        calculator.classList.add('powered-off');
+        powerButton.classList.add('off');
+        displayInput.innerHTML = "";
+        displayOutput.innerHTML = "";
+        input = "";
+    } else {
+        calculator.classList.remove('powered-off');
+        powerButton.classList.remove('off');
+        displayInput.innerHTML = "0";
+        displayOutput.innerHTML = "0";
+    }
+});
+
+// Modify your existing handleInput function to check power state
+function handleInput(value) {
+    if (!isPowered) return; // Prevent input when powered off
+    
+    // Rest of your existing handleInput function remains the same
+    if (value === "clear") {
+        input = "";
+        displayInput.innerHTML = "0";
+        displayOutput.innerHTML = "0";
+    }
+    // ... rest of the function
+}
+
+// Modify your keyboard event listener to check power state
+document.addEventListener('keydown', (e) => {
+    if (!isPowered) return; // Prevent keyboard input when powered off
+    
+    const key = e.key;
+    const validKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '+', '-', '*', '/', '(', ')', '%', 'Enter', 'Backspace', 'Escape'];
+    
+    if (validKeys.includes(key)) {
+        e.preventDefault();
+        if (key === 'Enter') {
+            handleInput('=');
+        } else if (key === 'Escape') {
+            handleInput('clear');
+        } else if (key === 'Backspace') {
+            handleInput('backspace');
+        } else {
+            handleInput(key);
+        }
+    }
+});
+
+
 const keys = document.querySelectorAll('.key');
 const displayInput = document.querySelector('.display .input');
 const displayOutput = document.querySelector('.display .output');
