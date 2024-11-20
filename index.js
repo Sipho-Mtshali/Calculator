@@ -1,4 +1,3 @@
-// Add at the top of your JavaScript file
 let isPowered = true;
 const calculator = document.querySelector('.calculator');
 const powerButton = document.createElement('button');
@@ -6,8 +5,21 @@ powerButton.className = 'power-button';
 powerButton.innerHTML = '<span class="power-icon"></span>';
 calculator.appendChild(powerButton);
 
-// Add power button event listener
-powerButton.addEventListener('click', () => {
+const keys = document.querySelectorAll('.key');
+const displayInput = document.querySelector('.display .input');
+const displayOutput = document.querySelector('.display .output');
+
+let input = "";
+let lastResult = "0";
+
+function resetCalculator() {
+    input = "";
+    displayInput.innerHTML = "0";
+    displayOutput.innerHTML = "0";
+    lastResult = "0";
+}
+
+function togglePower() {
     isPowered = !isPowered;
     
     if (!isPowered) {
@@ -15,29 +27,26 @@ powerButton.addEventListener('click', () => {
         powerButton.classList.add('off');
         displayInput.innerHTML = "";
         displayOutput.innerHTML = "";
-        input = "";
     } else {
         calculator.classList.remove('powered-off');
         powerButton.classList.remove('off');
-        displayInput.innerHTML = "0";
-        displayOutput.innerHTML = "0";
+        resetCalculator();
+    }
+}
+
+// Power button event listener
+powerButton.addEventListener('click', togglePower);
+
+// Add keyboard support for power button
+document.addEventListener('keydown', (e) => {
+    // Optional: Add keyboard power toggle (e.g., F12 key)
+    if (e.key === 'F12') {
+        e.preventDefault();
+        togglePower();
     }
 });
 
-// Modify your existing handleInput function to check power state
-function handleInput(value) {
-    if (!isPowered) return; // Prevent input when powered off
-    
-    // Rest of your existing handleInput function remains the same
-    if (value === "clear") {
-        input = "";
-        displayInput.innerHTML = "0";
-        displayOutput.innerHTML = "0";
-    }
-    // ... rest of the function
-}
-
-// Modify your keyboard event listener to check power state
+// Modify keyboard support
 document.addEventListener('keydown', (e) => {
     if (!isPowered) return; // Prevent keyboard input when powered off
     
@@ -45,7 +54,7 @@ document.addEventListener('keydown', (e) => {
     const validKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '+', '-', '*', '/', '(', ')', '%', 'Enter', 'Backspace', 'Escape'];
     
     if (validKeys.includes(key)) {
-        e.preventDefault();
+        e.preventDefault(); // Prevent default behavior
         if (key === 'Enter') {
             handleInput('=');
         } else if (key === 'Escape') {
@@ -58,51 +67,33 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-
-const keys = document.querySelectorAll('.key');
-const displayInput = document.querySelector('.display .input');
-const displayOutput = document.querySelector('.display .output');
-
-let input = "";
-
-// Add keyboard support
-document.addEventListener('keydown', (e) => {
-    const key = e.key;
-    const validKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '+', '-', '*', '/', '(', ')', '%', 'Enter', 'Backspace', 'Escape'];
-    
-    if (validKeys.includes(key)) {
-        e.preventDefault();
-        if (key === 'Enter') {
-            handleInput('=');
-        } else if (key === 'Escape') {
-            handleInput('clear');
-        } else if (key === 'Backspace') {
-            handleInput('backspace');
-        } else {
-            handleInput(key);
-        }
-    }
-});
-
-// Click handlers for calculator keys
-for (let key of keys) {
-    key.addEventListener('click', () => {
+// Modify event delegation for keys
+document.querySelector('.keys').addEventListener('click', (e) => {
+    const key = e.target.closest('.key');
+    if (key && isPowered) {
         const value = key.dataset.key;
         handleInput(value);
-    });
-}
+    }
+});
 
 function handleInput(value) {
+    if (!isPowered) return; // Prevent input when powered off
+    
     if (value === "clear") {
-        input = "";
-        displayInput.innerHTML = "0";
-        displayOutput.innerHTML = "0";
+        resetCalculator();
     } else if (value === "backspace") {
-        input = input.slice(0, -1);
-        displayInput.innerHTML = cleanInput(input) || "0";
+        // If last result was just calculated, clear everything
+        if (displayOutput.innerHTML !== "0" && input === "") {
+            resetCalculator();
+        } else {
+            input = input.slice(0, -1);
+            displayInput.innerHTML = cleanInput(input) || "0";
+        }
     } else if (value === "=") {
         try {
-            let result = eval(prepareInput(input));
+            // If input is empty, use last result
+            const expressionToEvaluate = input || lastResult;
+            let result = eval(prepareInput(expressionToEvaluate));
             
             // Handle division by zero
             if (!isFinite(result)) {
@@ -114,11 +105,17 @@ function handleInput(value) {
                 result = parseFloat(result.toFixed(8));
             }
             
+            // Store last result and display
+            lastResult = result.toString();
             displayOutput.innerHTML = cleanOutput(result);
+            
+            // Clear input after calculation
+            input = "";
+            displayInput.innerHTML = "0";
         } catch (error) {
             displayOutput.innerHTML = "Error";
             setTimeout(() => {
-                displayOutput.innerHTML = "0";
+                resetCalculator();
             }, 2000);
         }
     } else if (value === "brackets") {
@@ -133,6 +130,11 @@ function handleInput(value) {
         
         displayInput.innerHTML = cleanInput(input);
     } else {
+        // If last result was just calculated, start a new expression
+        if (displayOutput.innerHTML !== "0" && input === "") {
+            input = lastResult;
+        }
+        
         if (validateInput(value)) {
             input += value;
             displayInput.innerHTML = cleanInput(input);
